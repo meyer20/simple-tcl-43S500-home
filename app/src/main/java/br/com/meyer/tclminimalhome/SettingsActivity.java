@@ -1,6 +1,7 @@
 package br.com.meyer.tclminimalhome;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
@@ -10,6 +11,7 @@ import android.widget.CheckBox;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 import java.util.HashSet;
 import java.util.ArrayList;
 import java.util.List;
@@ -50,6 +52,24 @@ public final class SettingsActivity extends Activity {
         TextView hint = text("Escolha os aplicativos da Casa e use as setas para definir a ordem da dock.", 17, Color.rgb(202, 215, 234));
         hint.setPadding(0, dp(12), 0, dp(32));
         page.addView(hint);
+
+        TextView reconnectCast = text("↻   RECONECTAR CHROMECAST", 17, Color.rgb(216, 243, 106));
+        reconnectCast.setGravity(Gravity.CENTER_VERTICAL);
+        reconnectCast.setPadding(dp(24), 0, dp(24), 0);
+        reconnectCast.setContentDescription("Reconectar Chromecast");
+        reconnectCast.setFocusable(true);
+        reconnectCast.setFocusableInTouchMode(true);
+        reconnectCast.setBackground(focusSurface(false));
+        reconnectCast.setOnFocusChangeListener((v, focused) -> {
+            v.setBackground(focusSurface(focused));
+            ((TextView) v).setTextColor(focused ? Color.WHITE : Color.rgb(216, 243, 106));
+            v.setElevation(dp(focused ? 12 : 2));
+            v.animate().translationY(focused ? -dp(2) : 0).setDuration(120).start();
+        });
+        reconnectCast.setOnClickListener(v -> reconnectChromecast());
+        LinearLayout.LayoutParams castParams = new LinearLayout.LayoutParams(dp(360), dp(58));
+        castParams.bottomMargin = dp(30);
+        page.addView(reconnectCast, castParams);
 
         List<MainActivity.AppEntry> apps = AppCatalog.forContext(this);
         View focusTarget = null;
@@ -132,6 +152,21 @@ public final class SettingsActivity extends Activity {
         restorePackage = packageName;
         restoreFocus = focus;
         render();
+    }
+
+    private void reconnectChromecast() {
+        String castPackage = "com.google.android.apps.mediashell";
+        try {
+            Intent browser = new Intent("com.google.cast.action.START_CAST_BROWSER");
+            browser.setPackage(castPackage);
+            startService(browser);
+            Intent receiver = new Intent("com.google.cast.action.BIND");
+            receiver.setPackage(castPackage);
+            startService(receiver);
+            Toast.makeText(this, "Chromecast reconectado. Tente transmitir novamente.", Toast.LENGTH_LONG).show();
+        } catch (Exception error) {
+            Toast.makeText(this, "Não foi possível reconectar o Chromecast.", Toast.LENGTH_LONG).show();
+        }
     }
 
     private TextView action(String symbol, String description) {
